@@ -185,6 +185,10 @@ class AprovarButton(discord.ui.Button):
                 except:
                     pass
                 try:
+                    await member.remove_roles(discord.Object(id=1211125285752410112), reason="Verificação aprovada")
+                except:
+                    pass
+                try:
                     await member.send("✅ **Você foi verificado com sucesso!**")
                 except:
                     pass

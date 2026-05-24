@@ -61,6 +61,7 @@ def iniciar_bot():
                         member = guild.get_member(r["discord_id"])
                         if member:
                             await member.add_roles(discord.Object(id=CARGO_ID), reason="Verificação aprovada")
+                            await member.remove_roles(discord.Object(id=1211125285752410112), reason="Verificação aprovada")
                     except:
                         pass
             except:
