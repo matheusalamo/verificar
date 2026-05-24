@@ -1,7 +1,4 @@
 {
   "name": "sistema-verificacao",
-  "type": "module",
-  "dependencies": {
-    "@netlify/blobs": "^8.0.0"
-  }
+  "type": "module"
 }

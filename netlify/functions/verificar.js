@@ -1,8 +1,24 @@
-import { getStore } from "@netlify/blobs";
+import { readFile, writeFile, mkdir } from "node:fs/promises";
+import { join } from "node:path";
 
+const DB_PATH = "/tmp/verificacoes.json";
 const WEBHOOK_URL = process.env.WEBHOOK_URL || "";
 const DISCORD_TOKEN = process.env.DISCORD_TOKEN || "";
 const GUILD_ID = process.env.GUILD_ID || "";
+
+async function lerDB() {
+  try {
+    const data = await readFile(DB_PATH, "utf-8");
+    return JSON.parse(data);
+  } catch {
+    return {};
+  }
+}
+
+async function salvarDB(data) {
+  await mkdir("/tmp", { recursive: true });
+  await writeFile(DB_PATH, JSON.stringify(data, null, 2));
+}
 
 async function enviarWebhook(nome, idade, telefone, discordId) {
   if (!WEBHOOK_URL) return;
@@ -64,10 +80,9 @@ export default async (req) => {
       return Response.json({ status: "erro", message: "ID do Discord inválido" }, { status: 400 });
     }
 
-    const store = getStore("verificacoes");
-    const existente = await store.get(telefone, { type: "json" });
+    const db = await lerDB();
 
-    if (existente && existente.status === "aprovado") {
+    if (db[telefone] && db[telefone].status === "aprovado") {
       return Response.json({ status: "ja_verificado", message: "Este telefone já foi verificado." });
     }
 
@@ -75,18 +90,17 @@ export default async (req) => {
       await banirMembro(discordId);
     }
 
-    const status = idade < 13 ? "banido" : "pendente";
-
-    await store.setJSON(telefone, {
+    db[telefone] = {
       nome,
       idade,
       telefone,
       discord_id: discordId,
-      status,
+      status: idade < 13 ? "banido" : "pendente",
       origem: "web",
       created_at: new Date().toISOString(),
-    });
+    };
 
+    await salvarDB(db);
     await enviarWebhook(nome, idade, telefone, discordId);
 
     return Response.json({

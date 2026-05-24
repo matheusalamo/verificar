@@ -1,4 +1,15 @@
-import { getStore } from "@netlify/blobs";
+import { readFile } from "node:fs/promises";
+
+const DB_PATH = "/tmp/verificacoes.json";
+
+async function lerDB() {
+  try {
+    const data = await readFile(DB_PATH, "utf-8");
+    return JSON.parse(data);
+  } catch {
+    return {};
+  }
+}
 
 export default async (req) => {
   if (req.method !== "POST") {
@@ -13,8 +24,8 @@ export default async (req) => {
       return Response.json({ status: "erro", message: "Telefone inválido" }, { status: 400 });
     }
 
-    const store = getStore("verificacoes");
-    const record = await store.get(telefone, { type: "json" });
+    const db = await lerDB();
+    const record = db[telefone];
 
     if (!record) {
       return Response.json({
@@ -36,6 +47,7 @@ export default async (req) => {
       message: mensagens[record.status] || "⏳ Pendente de aprovação.",
     });
   } catch (err) {
+    console.error("Erro:", err);
     return Response.json({ status: "erro", message: "Erro interno do servidor" }, { status: 500 });
   }
 };
