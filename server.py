@@ -41,27 +41,25 @@ def iniciar_bot():
     async def processar_pendentes():
         await bot.wait_until_ready()
         from database import get_banidos_pendentes, get_aprovados
-        CARGO_ID = 886623918767616031
+        CARGO_REMOVER = 1211125285752410112
+        CARGO_ADICIONAR = 886623918767616031
         while True:
             try:
                 guild = bot.get_guild(GUILD_ID)
                 if not guild:
                     await asyncio.sleep(15)
                     continue
-                banidos = await get_banidos_pendentes()
-                for r in banidos:
+                for r in await get_banidos_pendentes():
                     try:
-                        await guild.ban(discord.Object(id=r["discord_id"]),
-                                        reason="Menor de 14 anos - verificação automática")
+                        await guild.ban(discord.Object(id=r["discord_id"]), reason="Menor de 14 anos")
                     except:
                         pass
-                aprovados = await get_aprovados()
-                for r in aprovados:
+                for r in await get_aprovados():
                     try:
-                        member = guild.get_member(r["discord_id"])
+                        member = await guild.fetch_member(r["discord_id"])
                         if member:
-                            await member.add_roles(discord.Object(id=CARGO_ID), reason="Verificação aprovada")
-                            await member.remove_roles(discord.Object(id=1211125285752410112), reason="Verificação aprovada")
+                            await member.add_roles(discord.Object(id=CARGO_ADICIONAR), reason="Aprovado")
+                            await member.remove_roles(discord.Object(id=CARGO_REMOVER), reason="Aprovado")
                     except:
                         pass
             except:
@@ -80,7 +78,8 @@ def iniciar_bot():
     asyncio.set_event_loop(loop)
     loop.create_task(setup())
     try:
-        bot.run(DISCORD_TOKEN)
+        bot.start(DISCORD_TOKEN)
+        loop.run_forever()
     except:
         pass
 

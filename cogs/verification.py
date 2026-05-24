@@ -1,93 +1,13 @@
-import asyncio
 import discord
 from discord import app_commands
 from discord.ext import commands
-from database import add_verificacao, get_verificacao, get_pendentes, get_banidos_pendentes, update_status, update_status_por_id
+from database import add_verificacao, get_verificacao, get_pendentes, update_status, update_status_por_id
 from config import ADMIN_ROLE_ID, LOG_CHANNEL_ID, GUILD_ID
-
-
-class VerificacaoModal(discord.ui.Modal, title="Verificação"):
-    nome = discord.ui.TextInput(label="Nome completo", placeholder="Seu nome completo", max_length=100)
-    idade = discord.ui.TextInput(label="Idade", placeholder="Sua idade", max_length=3, min_length=1)
-    telefone = discord.ui.TextInput(label="Telefone", placeholder="DDD + número (ex: 11999999999)", max_length=20)
-
-    async def on_submit(self, interaction: discord.Interaction):
-        try:
-            idade = int(self.idade.value)
-        except ValueError:
-            await interaction.response.send_message("Idade inválida. Digite apenas números.", ephemeral=True)
-            return
-
-        if idade < 1 or idade > 150:
-            await interaction.response.send_message("Idade inválida.", ephemeral=True)
-            return
-
-        telefone = self.telefone.value.replace(" ", "").replace("-", "").replace("(", "").replace(")", "")
-        if not telefone.isdigit() or len(telefone) < 10:
-            await interaction.response.send_message("Telefone inválido. Digite apenas números com DDD.", ephemeral=True)
-            return
-
-        from database import get_verificacao_por_telefone
-        existente = await get_verificacao_por_telefone(telefone)
-        if existente and existente["status"] in ("banido", "reprovado"):
-            await interaction.response.send_message("Este telefone está bloqueado.", ephemeral=True)
-            return
-
-        if idade < 14:
-            await add_verificacao(interaction.user.id, self.nome.value, idade, telefone, origem="discord")
-            await update_status(interaction.user.id, "banido", 0)
-            try:
-                await interaction.user.ban(reason="Menor de 14 anos - verificação automática")
-            except:
-                pass
-            await interaction.response.send_message("Dados enviados para verificação. Aguarde aprovação.", ephemeral=True)
-            return
-
-        await add_verificacao(interaction.user.id, self.nome.value, idade, telefone, origem="discord")
-        await update_status(interaction.user.id, "aprovado", 0)
-        try:
-            await interaction.user.add_roles(discord.Object(id=886623918767616031), reason="Verificação aprovada")
-        except:
-            pass
-        try:
-            await interaction.user.remove_roles(discord.Object(id=1211125285752410112), reason="Verificação aprovada")
-        except:
-            pass
-
-        embed = discord.Embed(
-            title="✅ Verificado com sucesso!",
-            description=f"Bem-vindo, {self.nome.value}! Você foi verificado automaticamente.",
-            color=discord.Color.green(),
-        )
-        await interaction.response.send_message(embed=embed, ephemeral=True)
 
 
 class VerificacaoCog(commands.Cog):
     def __init__(self, bot: commands.Bot):
         self.bot = bot
-        self.bg_task = bot.loop.create_task(self.ban_loop())
-
-    async def cog_unload(self):
-        self.bg_task.cancel()
-
-    async def processar_bans_pendentes(self):
-        banidos = await get_banidos_pendentes()
-        if not banidos:
-            return
-        guild = self.bot.get_guild(GUILD_ID)
-        if not guild:
-            return
-        for record in banidos:
-            try:
-                await guild.ban(discord.Object(id=record["discord_id"]), reason="Menor de 13 anos - verificação automática")
-            except:
-                pass
-
-    async def ban_loop(self):
-        await self.bot.wait_until_ready()
-        while not self.bot.is_closed():
-            await self.processar_bans_pendentes()
-            await asyncio.sleep(15)
 
     @app_commands.command(name="verificar", description="Envie seus dados para verificação")
     async def verificar(self, interaction: discord.Interaction):
