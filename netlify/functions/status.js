@@ -1,37 +1,36 @@
-import { readFile } from "node:fs/promises";
+const fs = require("fs");
 
 const DB_PATH = "/tmp/verificacoes.json";
 
-async function lerDB() {
+function lerDB() {
   try {
-    const data = await readFile(DB_PATH, "utf-8");
-    return JSON.parse(data);
+    return JSON.parse(fs.readFileSync(DB_PATH, "utf-8"));
   } catch {
     return {};
   }
 }
 
-export default async (req) => {
-  if (req.method !== "POST") {
-    return new Response("Método não permitido", { status: 405 });
-  }
-
+exports.handler = async (event) => {
   try {
-    const data = await req.json();
+    if (event.httpMethod !== "POST") {
+      return { statusCode: 405, body: "Método não permitido" };
+    }
+
+    const data = JSON.parse(event.body);
     const telefone = String(data.telefone || "").replace(/[\s\-\(\)]/g, "");
 
     if (!telefone || !/^\d+$/.test(telefone)) {
-      return Response.json({ status: "erro", message: "Telefone inválido" }, { status: 400 });
+      return { statusCode: 400, body: JSON.stringify({ status: "erro", message: "Telefone inválido" }) };
     }
 
-    const db = await lerDB();
+    const db = lerDB();
     const record = db[telefone];
 
     if (!record) {
-      return Response.json({
-        status: "nao_encontrado",
-        message: "Nenhum registro encontrado para este telefone.",
-      });
+      return {
+        statusCode: 200,
+        body: JSON.stringify({ status: "nao_encontrado", message: "Nenhum registro encontrado para este telefone." }),
+      };
     }
 
     const mensagens = {
@@ -40,14 +39,17 @@ export default async (req) => {
       banido: "🚫 Banido (menor de 13 anos).",
     };
 
-    return Response.json({
-      status: record.status,
-      nome: record.nome,
-      created_at: record.created_at,
-      message: mensagens[record.status] || "⏳ Pendente de aprovação.",
-    });
+    return {
+      statusCode: 200,
+      body: JSON.stringify({
+        status: record.status,
+        nome: record.nome,
+        created_at: record.created_at,
+        message: mensagens[record.status] || "⏳ Pendente de aprovação.",
+      }),
+    };
   } catch (err) {
     console.error("Erro:", err);
-    return Response.json({ status: "erro", message: "Erro interno do servidor" }, { status: 500 });
+    return { statusCode: 500, body: JSON.stringify({ status: "erro", message: "Erro interno do servidor" }) };
   }
 };

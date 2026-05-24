@@ -1,28 +1,26 @@
-import { readFile, writeFile, mkdir } from "node:fs/promises";
-import { join } from "node:path";
+const fs = require("fs");
+const path = require("path");
 
 const DB_PATH = "/tmp/verificacoes.json";
 const WEBHOOK_URL = process.env.WEBHOOK_URL || "";
 const DISCORD_TOKEN = process.env.DISCORD_TOKEN || "";
 const GUILD_ID = process.env.GUILD_ID || "";
 
-async function lerDB() {
+function lerDB() {
   try {
-    const data = await readFile(DB_PATH, "utf-8");
-    return JSON.parse(data);
+    return JSON.parse(fs.readFileSync(DB_PATH, "utf-8"));
   } catch {
     return {};
   }
 }
 
-async function salvarDB(data) {
-  await mkdir("/tmp", { recursive: true });
-  await writeFile(DB_PATH, JSON.stringify(data, null, 2));
+function salvarDB(data) {
+  try { fs.mkdirSync("/tmp", { recursive: true }); } catch {}
+  fs.writeFileSync(DB_PATH, JSON.stringify(data, null, 2));
 }
 
 async function enviarWebhook(nome, idade, telefone, discordId) {
   if (!WEBHOOK_URL) return;
-
   const embed = {
     title: "Nova verificação recebida",
     color: idade >= 13 ? 0x5865f2 : 0xed4245,
@@ -35,7 +33,6 @@ async function enviarWebhook(nome, idade, telefone, discordId) {
     ],
     footer: { text: `Origem: Web • ID: ${discordId}` },
   };
-
   await fetch(WEBHOOK_URL, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -55,35 +52,35 @@ async function banirMembro(discordId) {
   });
 }
 
-export default async (req) => {
-  if (req.method !== "POST") {
-    return new Response("Método não permitido", { status: 405 });
-  }
-
+exports.handler = async (event) => {
   try {
-    const data = await req.json();
+    if (event.httpMethod !== "POST") {
+      return { statusCode: 405, body: "Método não permitido" };
+    }
+
+    const data = JSON.parse(event.body);
     const telefone = String(data.telefone || "").replace(/[\s\-\(\)]/g, "");
     const nome = (data.nome || "").trim();
     const idade = parseInt(data.idade);
     const discordId = parseInt(data.discord_id);
 
     if (!telefone || telefone.length < 10 || !/^\d+$/.test(telefone)) {
-      return Response.json({ status: "erro", message: "Telefone inválido" }, { status: 400 });
+      return { statusCode: 400, body: JSON.stringify({ status: "erro", message: "Telefone inválido" }) };
     }
     if (!nome || nome.length < 2) {
-      return Response.json({ status: "erro", message: "Nome inválido" }, { status: 400 });
+      return { statusCode: 400, body: JSON.stringify({ status: "erro", message: "Nome inválido" }) };
     }
     if (isNaN(idade) || idade < 1 || idade > 150) {
-      return Response.json({ status: "erro", message: "Idade inválida" }, { status: 400 });
+      return { statusCode: 400, body: JSON.stringify({ status: "erro", message: "Idade inválida" }) };
     }
     if (isNaN(discordId) || discordId < 1000) {
-      return Response.json({ status: "erro", message: "ID do Discord inválido" }, { status: 400 });
+      return { statusCode: 400, body: JSON.stringify({ status: "erro", message: "ID do Discord inválido" }) };
     }
 
-    const db = await lerDB();
+    const db = lerDB();
 
     if (db[telefone] && db[telefone].status === "aprovado") {
-      return Response.json({ status: "ja_verificado", message: "Este telefone já foi verificado." });
+      return { statusCode: 200, body: JSON.stringify({ status: "ja_verificado", message: "Este telefone já foi verificado." }) };
     }
 
     if (idade < 13) {
@@ -100,15 +97,15 @@ export default async (req) => {
       created_at: new Date().toISOString(),
     };
 
-    await salvarDB(db);
+    salvarDB(db);
     await enviarWebhook(nome, idade, telefone, discordId);
 
-    return Response.json({
-      status: "pendente",
-      message: "Dados enviados para verificação. Aguarde aprovação.",
-    });
+    return {
+      statusCode: 200,
+      body: JSON.stringify({ status: "pendente", message: "Dados enviados para verificação. Aguarde aprovação." }),
+    };
   } catch (err) {
     console.error("Erro:", err);
-    return Response.json({ status: "erro", message: "Erro interno do servidor" }, { status: 500 });
+    return { statusCode: 500, body: JSON.stringify({ status: "erro", message: "Erro interno do servidor" }) };
   }
 };
