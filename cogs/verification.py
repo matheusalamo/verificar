@@ -181,6 +181,10 @@ class AprovarButton(discord.ui.Button):
             member = interaction.guild.get_member(self.target_id)
             if member:
                 try:
+                    await member.add_roles(discord.Object(id=886623918767616031), reason="Verificação aprovada")
+                except:
+                    pass
+                try:
                     await member.send("✅ **Você foi verificado com sucesso!**")
                 except:
                     pass
