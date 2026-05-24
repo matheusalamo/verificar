@@ -78,8 +78,7 @@ def iniciar_bot():
     asyncio.set_event_loop(loop)
     loop.create_task(setup())
     try:
-        bot.start(DISCORD_TOKEN)
-        loop.run_forever()
+        loop.run_until_complete(bot.start(DISCORD_TOKEN))
     except:
         pass
 
