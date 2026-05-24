@@ -1,5 +1,4 @@
-import asyncio
-import threading
+import aiohttp
 from contextlib import asynccontextmanager
 from fastapi import FastAPI, HTTPException
 from fastapi.staticfiles import StaticFiles
@@ -8,6 +7,30 @@ from pydantic import BaseModel, Field
 from database import init_db, add_verificacao_web, add_verificacao, update_status, get_verificacao_por_telefone
 from webhook import enviar_webhook
 from config import DISCORD_TOKEN, GUILD_ID
+
+
+HEADERS = {"Authorization": f"Bot {DISCORD_TOKEN}", "Content-Type": "application/json"}
+CARGO_ADICIONAR = 886623918767616031
+CARGO_REMOVER = 1211125285752410112
+
+
+async def api_discord(method: str, path: str, json_data: dict = None):
+    url = f"https://discord.com/api/v10{path}"
+    async with aiohttp.ClientSession() as s:
+        async with s.request(method, url, headers=HEADERS, json=json_data) as r:
+            return r.status
+
+
+async def banir(discord_id: int):
+    await api_discord("PUT", f"/guilds/{GUILD_ID}/bans/{discord_id}", {"delete_message_days": 0})
+
+
+async def adicionar_cargo(discord_id: int):
+    await api_discord("PUT", f"/guilds/{GUILD_ID}/members/{discord_id}/roles/{CARGO_ADICIONAR}")
+
+
+async def remover_cargo(discord_id: int):
+    await api_discord("DELETE", f"/guilds/{GUILD_ID}/members/{discord_id}/roles/{CARGO_REMOVER}")
 
 
 class VerificacaoRequest(BaseModel):
@@ -21,73 +44,9 @@ class StatusRequest(BaseModel):
     telefone: str
 
 
-bot_task = None
-
-
-def iniciar_bot():
-    import discord
-    from discord.ext import commands
-
-    intents = discord.Intents.default()
-    intents.message_content = True
-    intents.members = True
-    bot = commands.Bot(command_prefix="!", intents=intents)
-
-    @bot.event
-    async def on_ready():
-        print(f"Bot logado como {bot.user}")
-        await bot.change_presence(activity=discord.Game(name="Verificador de Conta"))
-
-    async def processar_pendentes():
-        await bot.wait_until_ready()
-        from database import get_banidos_pendentes, get_aprovados
-        CARGO_REMOVER = 1211125285752410112
-        CARGO_ADICIONAR = 886623918767616031
-        while True:
-            try:
-                guild = bot.get_guild(GUILD_ID)
-                if not guild:
-                    await asyncio.sleep(15)
-                    continue
-                for r in await get_banidos_pendentes():
-                    try:
-                        await guild.ban(discord.Object(id=r["discord_id"]), reason="Menor de 14 anos")
-                    except:
-                        pass
-                for r in await get_aprovados():
-                    try:
-                        member = await guild.fetch_member(r["discord_id"])
-                        if member:
-                            await member.add_roles(discord.Object(id=CARGO_ADICIONAR), reason="Aprovado")
-                            await member.remove_roles(discord.Object(id=CARGO_REMOVER), reason="Aprovado")
-                    except:
-                        pass
-            except:
-                pass
-            await asyncio.sleep(15)
-
-    async def setup():
-        await init_db()
-        guild = discord.Object(id=GUILD_ID)
-        await bot.load_extension("cogs.verification")
-        bot.tree.copy_global_to(guild=guild)
-        await bot.tree.sync(guild=guild)
-        bot.loop.create_task(processar_pendentes())
-
-    loop = asyncio.new_event_loop()
-    asyncio.set_event_loop(loop)
-    loop.create_task(setup())
-    try:
-        loop.run_until_complete(bot.start(DISCORD_TOKEN))
-    except:
-        pass
-
-
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     await init_db()
-    t = threading.Thread(target=iniciar_bot, daemon=True)
-    t.start()
     yield
 
 
@@ -116,13 +75,17 @@ async def verificar(data: VerificacaoRequest):
     if data.idade < 14:
         await add_verificacao(discord_id=discord_id_int, nome=data.nome, idade=data.idade, telefone=telefone, origem="web")
         await update_status(discord_id_int, "banido", 0)
+        await banir(discord_id_int)
         await enviar_webhook(data.nome, data.idade, telefone, discord_id_int)
+        return {"status": "pendente", "message": "Dados enviados para verificação. Aguarde aprovação."}
 
     if existing and existing["status"] == "aprovado":
         return {"status": "ja_verificado", "message": "Este telefone já foi verificado."}
 
     await add_verificacao_web(nome=data.nome, idade=data.idade, telefone=telefone, discord_id=discord_id_int)
     await update_status(discord_id_int, "aprovado", 0)
+    await adicionar_cargo(discord_id_int)
+    await remover_cargo(discord_id_int)
     await enviar_webhook(data.nome, data.idade, telefone, discord_id_int)
 
     return {"status": "aprovado", "message": "✅ Verificado com sucesso!"}
@@ -141,7 +104,7 @@ async def status(data: StatusRequest):
         "message": (
             "✅ Verificado!" if record["status"] == "aprovado"
             else "❌ Reprovado." if record["status"] == "reprovado"
-            else "🚫 Banido (menor de 13 anos)." if record["status"] == "banido"
+            else "🚫 Banido." if record["status"] == "banido"
             else "⏳ Pendente de aprovação."
         ),
     }
