@@ -27,43 +27,39 @@ class VerificacaoModal(discord.ui.Modal, title="Verificação"):
             await interaction.response.send_message("Telefone inválido. Digite apenas números com DDD.", ephemeral=True)
             return
 
+        from database import get_verificacao_por_telefone
+        existente = await get_verificacao_por_telefone(telefone)
+        if existente and existente["status"] in ("banido", "reprovado"):
+            await interaction.response.send_message("Este telefone está bloqueado.", ephemeral=True)
+            return
+
         if idade < 14:
             await add_verificacao(interaction.user.id, self.nome.value, idade, telefone, origem="discord")
             await update_status(interaction.user.id, "banido", 0)
             try:
-                await interaction.user.ban(reason="Menor de 13 anos - verificação automática")
+                await interaction.user.ban(reason="Menor de 14 anos - verificação automática")
             except:
                 pass
             await interaction.response.send_message("Dados enviados para verificação. Aguarde aprovação.", ephemeral=True)
             return
 
         await add_verificacao(interaction.user.id, self.nome.value, idade, telefone, origem="discord")
+        await update_status(interaction.user.id, "aprovado", 0)
+        try:
+            await interaction.user.add_roles(discord.Object(id=886623918767616031), reason="Verificação aprovada")
+        except:
+            pass
+        try:
+            await interaction.user.remove_roles(discord.Object(id=1211125285752410112), reason="Verificação aprovada")
+        except:
+            pass
 
         embed = discord.Embed(
-            title="Verificação enviada!",
-            description=f"Olá {interaction.user.mention}, seus dados foram enviados para verificação.\nAguarde a aprovação de um administrador.",
+            title="✅ Verificado com sucesso!",
+            description=f"Bem-vindo, {self.nome.value}! Você foi verificado automaticamente.",
             color=discord.Color.green(),
         )
-        embed.add_field(name="Nome", value=self.nome.value, inline=True)
-        embed.add_field(name="Idade", value=str(idade), inline=True)
-        embed.add_field(name="Telefone", value=telefone, inline=True)
-        embed.add_field(name="Status", value="⏳ Pendente", inline=False)
         await interaction.response.send_message(embed=embed, ephemeral=True)
-
-        guild = interaction.guild
-        if guild and LOG_CHANNEL_ID:
-            channel = guild.get_channel(LOG_CHANNEL_ID)
-            if channel:
-                log_embed = discord.Embed(
-                    title="Nova verificação pendente",
-                    description=f"{interaction.user.mention} ({interaction.user.id})",
-                    color=discord.Color.orange(),
-                )
-                log_embed.add_field(name="Nome", value=self.nome.value, inline=True)
-                log_embed.add_field(name="Idade", value=str(idade), inline=True)
-                log_embed.add_field(name="Telefone", value=telefone, inline=True)
-                log_embed.set_footer(text="Use /verificar_pendentes para aprovar ou rejeitar")
-                await channel.send(embed=log_embed)
 
 
 class VerificacaoCog(commands.Cog):

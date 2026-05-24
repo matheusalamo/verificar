@@ -109,13 +109,16 @@ async def verificar(data: VerificacaoRequest):
     if not telefone.isdigit() or len(telefone) < 10:
         raise HTTPException(status_code=400, detail="Telefone inválido")
 
+    existing = await get_verificacao_por_telefone(telefone)
+    if existing and existing["status"] in ("banido", "reprovado"):
+        return {"status": "bloqueado", "message": "Este telefone está bloqueado."}
+
     if data.idade < 14:
         await add_verificacao(discord_id=data.discord_id, nome=data.nome, idade=data.idade, telefone=telefone, origem="web")
         await update_status(data.discord_id, "banido", 0)
         await enviar_webhook(data.nome, data.idade, telefone, data.discord_id)
         return {"status": "pendente", "message": "Dados enviados para verificação. Aguarde aprovação."}
 
-    existing = await get_verificacao_por_telefone(telefone)
     if existing and existing["status"] == "aprovado":
         return {"status": "ja_verificado", "message": "Este telefone já foi verificado."}
 
