@@ -36,6 +36,7 @@ def iniciar_bot():
     @bot.event
     async def on_ready():
         print(f"Bot logado como {bot.user}")
+        await bot.change_presence(activity=discord.Game(name="Verificador de Conta"))
 
     async def processar_bans():
         await bot.wait_until_ready()
