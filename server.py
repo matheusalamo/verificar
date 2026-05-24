@@ -14,7 +14,7 @@ class VerificacaoRequest(BaseModel):
     nome: str = Field(min_length=2, max_length=100)
     idade: int = Field(ge=1, le=150)
     telefone: str = Field(min_length=10, max_length=20)
-    discord_id: int = Field(ge=1000, le=999999999999999999)
+    discord_id: str = Field(min_length=10, max_length=30, pattern=r"^\d+$")
 
 
 class StatusRequest(BaseModel):
@@ -111,10 +111,19 @@ async def verificar(data: VerificacaoRequest):
     if existing and existing["status"] in ("banido", "reprovado"):
         return {"status": "bloqueado", "message": "Este telefone está bloqueado."}
 
+    discord_id_int = int(data.discord_id)
+
     if data.idade < 14:
-        await add_verificacao(discord_id=data.discord_id, nome=data.nome, idade=data.idade, telefone=telefone, origem="web")
-        await update_status(data.discord_id, "banido", 0)
-        await enviar_webhook(data.nome, data.idade, telefone, data.discord_id)
+        await add_verificacao(discord_id=discord_id_int, nome=data.nome, idade=data.idade, telefone=telefone, origem="web")
+        await update_status(discord_id_int, "banido", 0)
+        await enviar_webhook(data.nome, data.idade, telefone, discord_id_int)
+
+    if existing and existing["status"] == "aprovado":
+        return {"status": "ja_verificado", "message": "Este telefone já foi verificado."}
+
+    await add_verificacao_web(nome=data.nome, idade=data.idade, telefone=telefone, discord_id=discord_id_int)
+    await update_status(discord_id_int, "aprovado", 0)
+    await enviar_webhook(data.nome, data.idade, telefone, discord_id_int)
         return {"status": "pendente", "message": "Dados enviados para verificação. Aguarde aprovação."}
 
     if existing and existing["status"] == "aprovado":

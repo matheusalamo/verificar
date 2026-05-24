@@ -29,7 +29,7 @@ document.getElementById('verificacao-form').addEventListener('submit', async (e)
                 nome: document.getElementById('nome').value.trim(),
                 idade: parseInt(document.getElementById('idade').value),
                 telefone: document.getElementById('telefone').value.trim(),
-                discord_id: parseInt(document.getElementById('discord').value.trim()),
+                discord_id: document.getElementById('discord').value.trim(),
             }),
         });
 
