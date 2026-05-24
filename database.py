@@ -61,6 +61,15 @@ async def get_verificacao_por_telefone(telefone: str):
         return await cursor.fetchone()
 
 
+async def get_aprovados():
+    async with aiosqlite.connect(DB_PATH) as db:
+        db.row_factory = aiosqlite.Row
+        cursor = await db.execute(
+            "SELECT * FROM verificacoes WHERE status = 'aprovado' AND discord_id IS NOT NULL ORDER BY created_at ASC"
+        )
+        return await cursor.fetchall()
+
+
 async def get_banidos_pendentes():
     async with aiosqlite.connect(DB_PATH) as db:
         db.row_factory = aiosqlite.Row

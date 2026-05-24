@@ -38,20 +38,31 @@ def iniciar_bot():
         print(f"Bot logado como {bot.user}")
         await bot.change_presence(activity=discord.Game(name="Verificador de Conta"))
 
-    async def processar_bans():
+    async def processar_pendentes():
         await bot.wait_until_ready()
-        from database import get_banidos_pendentes
+        from database import get_banidos_pendentes, get_aprovados
+        CARGO_ID = 886623918767616031
         while True:
             try:
                 guild = bot.get_guild(GUILD_ID)
-                if guild:
-                    banidos = await get_banidos_pendentes()
-                    for r in banidos:
-                        try:
-                            await guild.ban(discord.Object(id=r["discord_id"]),
-                                            reason="Menor de 13 anos - verificação automática")
-                        except:
-                            pass
+                if not guild:
+                    await asyncio.sleep(15)
+                    continue
+                banidos = await get_banidos_pendentes()
+                for r in banidos:
+                    try:
+                        await guild.ban(discord.Object(id=r["discord_id"]),
+                                        reason="Menor de 14 anos - verificação automática")
+                    except:
+                        pass
+                aprovados = await get_aprovados()
+                for r in aprovados:
+                    try:
+                        member = guild.get_member(r["discord_id"])
+                        if member:
+                            await member.add_roles(discord.Object(id=CARGO_ID), reason="Verificação aprovada")
+                    except:
+                        pass
             except:
                 pass
             await asyncio.sleep(15)
@@ -62,7 +73,7 @@ def iniciar_bot():
         await bot.load_extension("cogs.verification")
         bot.tree.copy_global_to(guild=guild)
         await bot.tree.sync(guild=guild)
-        bot.loop.create_task(processar_bans())
+        bot.loop.create_task(processar_pendentes())
 
     loop = asyncio.new_event_loop()
     asyncio.set_event_loop(loop)
@@ -100,17 +111,18 @@ async def verificar(data: VerificacaoRequest):
     if data.idade < 14:
         await add_verificacao(discord_id=data.discord_id, nome=data.nome, idade=data.idade, telefone=telefone, origem="web")
         await update_status(data.discord_id, "banido", 0)
+        await enviar_webhook(data.nome, data.idade, telefone, data.discord_id)
+        return {"status": "pendente", "message": "Dados enviados para verificação. Aguarde aprovação."}
 
     existing = await get_verificacao_por_telefone(telefone)
     if existing and existing["status"] == "aprovado":
         return {"status": "ja_verificado", "message": "Este telefone já foi verificado."}
 
-    if data.idade >= 13:
-        await add_verificacao_web(nome=data.nome, idade=data.idade, telefone=telefone, discord_id=data.discord_id)
-
+    await add_verificacao_web(nome=data.nome, idade=data.idade, telefone=telefone, discord_id=data.discord_id)
+    await update_status(data.discord_id, "aprovado", 0)
     await enviar_webhook(data.nome, data.idade, telefone, data.discord_id)
 
-    return {"status": "pendente", "message": "Dados enviados para verificação. Aguarde aprovação."}
+    return {"status": "aprovado", "message": "✅ Verificado com sucesso!"}
 
 
 @app.post("/api/status")
