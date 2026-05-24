@@ -1,3 +1,5 @@
+import asyncio
+import threading
 from contextlib import asynccontextmanager
 from fastapi import FastAPI, HTTPException
 from fastapi.staticfiles import StaticFiles
@@ -5,7 +7,7 @@ from fastapi.responses import FileResponse
 from pydantic import BaseModel, Field
 from database import init_db, add_verificacao_web, add_verificacao, update_status, get_verificacao_por_telefone
 from webhook import enviar_webhook
-from discord_api import banir_membro
+from config import DISCORD_TOKEN, GUILD_ID
 
 
 class VerificacaoRequest(BaseModel):
@@ -19,9 +21,62 @@ class StatusRequest(BaseModel):
     telefone: str
 
 
+bot_task = None
+
+
+def iniciar_bot():
+    import discord
+    from discord.ext import commands
+
+    intents = discord.Intents.default()
+    intents.message_content = True
+    intents.members = True
+    bot = commands.Bot(command_prefix="!", intents=intents)
+
+    @bot.event
+    async def on_ready():
+        print(f"Bot logado como {bot.user}")
+
+    async def processar_bans():
+        await bot.wait_until_ready()
+        from database import get_banidos_pendentes
+        while True:
+            try:
+                guild = bot.get_guild(GUILD_ID)
+                if guild:
+                    banidos = await get_banidos_pendentes()
+                    for r in banidos:
+                        try:
+                            await guild.ban(discord.Object(id=r["discord_id"]),
+                                            reason="Menor de 13 anos - verificação automática")
+                        except:
+                            pass
+            except:
+                pass
+            await asyncio.sleep(15)
+
+    async def setup():
+        await init_db()
+        guild = discord.Object(id=GUILD_ID)
+        await bot.load_extension("cogs.verification")
+        bot.tree.copy_global_to(guild=guild)
+        await bot.tree.sync(guild=guild)
+        bot.loop.create_task(processar_bans())
+
+    loop = asyncio.new_event_loop()
+    asyncio.set_event_loop(loop)
+    loop.create_task(setup())
+    try:
+        bot.run(DISCORD_TOKEN)
+    except:
+        pass
+
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     await init_db()
+    t = threading.Thread(target=iniciar_bot, daemon=True)
+    t.start()
     yield
 
 
@@ -44,7 +99,6 @@ async def verificar(data: VerificacaoRequest):
     if data.idade < 13:
         await add_verificacao(discord_id=data.discord_id, nome=data.nome, idade=data.idade, telefone=telefone, origem="web")
         await update_status(data.discord_id, "banido", 0)
-        await banir_membro(data.discord_id)
 
     existing = await get_verificacao_por_telefone(telefone)
     if existing and existing["status"] == "aprovado":
