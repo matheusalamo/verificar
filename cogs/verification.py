@@ -134,5 +134,16 @@ class ReprovarButton(discord.ui.Button):
             await interaction.response.edit_message(content=f"❌ **Verificação #{self.record_id} reprovada!**", view=None, embed=None)
 
 
+    @commands.command(name="reset")
+    @commands.has_permissions(administrator=True)
+    async def reset(self, ctx: commands.Context):
+        import aiosqlite
+        from config import DB_PATH
+        async with aiosqlite.connect(DB_PATH) as db:
+            await db.execute("DELETE FROM verificacoes")
+            await db.commit()
+        await ctx.send("🗑️ Banco de dados resetado com sucesso!")
+
+
 async def setup(bot: commands.Bot):
     await bot.add_cog(VerificacaoCog(bot))

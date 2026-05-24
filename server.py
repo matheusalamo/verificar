@@ -108,3 +108,13 @@ async def status(data: StatusRequest):
             else "⏳ Pendente de aprovação."
         ),
     }
+
+
+@app.post("/api/reset")
+async def reset():
+    import aiosqlite
+    from config import DB_PATH
+    async with aiosqlite.connect(DB_PATH) as db:
+        await db.execute("DELETE FROM verificacoes")
+        await db.commit()
+    return {"status": "ok", "message": "Banco resetado."}
