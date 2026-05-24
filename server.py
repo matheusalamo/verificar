@@ -124,14 +124,6 @@ async def verificar(data: VerificacaoRequest):
     await add_verificacao_web(nome=data.nome, idade=data.idade, telefone=telefone, discord_id=discord_id_int)
     await update_status(discord_id_int, "aprovado", 0)
     await enviar_webhook(data.nome, data.idade, telefone, discord_id_int)
-        return {"status": "pendente", "message": "Dados enviados para verificação. Aguarde aprovação."}
-
-    if existing and existing["status"] == "aprovado":
-        return {"status": "ja_verificado", "message": "Este telefone já foi verificado."}
-
-    await add_verificacao_web(nome=data.nome, idade=data.idade, telefone=telefone, discord_id=data.discord_id)
-    await update_status(data.discord_id, "aprovado", 0)
-    await enviar_webhook(data.nome, data.idade, telefone, data.discord_id)
 
     return {"status": "aprovado", "message": "✅ Verificado com sucesso!"}
 
