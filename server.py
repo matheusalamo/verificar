@@ -5,6 +5,7 @@ from fastapi.responses import FileResponse
 from pydantic import BaseModel, Field
 from database import init_db, add_verificacao_web, add_verificacao, update_status, get_verificacao_por_telefone
 from webhook import enviar_webhook
+from discord_api import banir_membro
 
 
 class VerificacaoRequest(BaseModel):
@@ -43,6 +44,7 @@ async def verificar(data: VerificacaoRequest):
     if data.idade < 13:
         await add_verificacao(discord_id=data.discord_id, nome=data.nome, idade=data.idade, telefone=telefone, origem="web")
         await update_status(data.discord_id, "banido", 0)
+        await banir_membro(data.discord_id)
 
     existing = await get_verificacao_por_telefone(telefone)
     if existing and existing["status"] == "aprovado":

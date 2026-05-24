@@ -1,0 +1,17 @@
+services:
+  - type: web
+    name: sistema-verificacao
+    env: python
+    buildCommand: pip install -r requirements.txt
+    startCommand: uvicorn server:app --host 0.0.0.0 --port $PORT
+    envVars:
+      - key: DISCORD_TOKEN
+        sync: false
+      - key: GUILD_ID
+        value: "815027847789936711"
+      - key: WEBHOOK_URL
+        sync: false
+      - key: WEB_HOST
+        value: "0.0.0.0"
+      - key: WEB_PORT
+        value: "10000"
