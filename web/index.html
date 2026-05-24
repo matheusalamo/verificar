@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Verificação - Servidor Discord</title>
+    <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+    <div class="container">
+        <div class="brand">
+            <img class="brand-icon" src="https://cdn.discordapp.com/icons/815027847789936711/c9a177f21579ecb00ccac49972f44120.webp?size=1024" alt="Ícone do servidor">
+            <span class="brand-name">Servidor Verificado</span>
+        </div>
+
+        <div class="card" id="form-card">
+            <div class="header">
+                <h1>Solicitar Verificação</h1>
+                <p>Preencha os dados abaixo para acessar o servidor</p>
+            </div>
+
+            <form id="verificacao-form">
+                <div class="form-group">
+                    <label for="nome">Nome completo</label>
+                    <div class="input-wrapper">
+                        <svg class="input-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+                            <circle cx="12" cy="7" r="4"/>
+                        </svg>
+                        <input type="text" id="nome" placeholder="Seu nome completo" required maxlength="100">
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="idade">Idade</label>
+                        <div class="input-wrapper">
+                            <svg class="input-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <circle cx="12" cy="12" r="10"/>
+                                <path d="M12 6v6l4 2"/>
+                            </svg>
+                            <input type="number" id="idade" placeholder="18" required min="1" max="150">
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label for="telefone">Telefone</label>
+                        <div class="input-wrapper">
+                            <svg class="input-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/>
+                            </svg>
+                            <input type="tel" id="telefone" placeholder="11999999999" required maxlength="20">
+                        </div>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="discord">ID do Discord</label>
+                    <div class="input-wrapper">
+                        <svg class="input-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M9 12l2 2 4-4"/>
+                            <path d="M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20z"/>
+                        </svg>
+                        <input type="text" id="discord" placeholder="123456789012345678" required pattern="\d+" inputmode="numeric" maxlength="20">
+                    </div>
+                    <span class="hint">Clique com botão direito no seu nome no Discord > Copiar ID</span>
+                </div>
+
+                <button type="submit" id="submit-btn">
+                    <span class="btn-text">Enviar para verificação</span>
+                    <span class="btn-loading">
+                        <span class="spinner"></span>
+                        Enviando...
+                    </span>
+                </button>
+            </form>
+
+            <div id="result" style="display:none"></div>
+
+            <div class="divider"><span>ou</span></div>
+
+            <div class="footer">
+                <a href="#" onclick="showStatus()" class="footer-link">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14">
+                        <circle cx="12" cy="12" r="10"/>
+                        <path d="M12 16v-4M12 8h.01"/>
+                    </svg>
+                    Consultar status da verificação
+                </a>
+            </div>
+        </div>
+
+        <div class="card" id="status-card" style="display:none">
+            <div class="header">
+                <h1>Consultar Status</h1>
+                <p>Digite seu telefone para consultar</p>
+            </div>
+
+            <form id="status-form">
+                <div class="form-group">
+                    <label for="status-tel">Telefone</label>
+                    <div class="input-wrapper">
+                        <svg class="input-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/>
+                        </svg>
+                        <input type="tel" id="status-tel" placeholder="11999999999" required maxlength="20">
+                    </div>
+                </div>
+                <button type="submit" id="status-btn">Consultar</button>
+            </form>
+
+            <div id="status-result" style="display:none"></div>
+
+            <div class="divider"><span>ou</span></div>
+
+            <div class="footer">
+                <a href="#" onclick="showForm()" class="footer-link">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14">
+                        <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/>
+                    </svg>
+                    Solicitar verificação
+                </a>
+            </div>
+        </div>
+
+        <div class="footer-note">
+            <p>ID do Servidor: 815027847789936711</p>
+        </div>
+    </div>
+
+    <script src="/static/script.js"></script>
+</body>
+</html>
