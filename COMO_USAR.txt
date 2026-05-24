@@ -1,0 +1,39 @@
+╔════════════════════════════════════════╗
+║   SISTEMA DE VERIFICAÇÃO - COMO USAR   ║
+╚════════════════════════════════════════╝
+
+═══ PELO SITE (Render) ═══
+
+1. Acesse: https://verificar-gi0k.onrender.com
+2. Preencha:
+   - Nome completo
+   - Idade
+   - Telefone (com DDD, só números)
+   - ID do Discord (botão direito no nome > Copiar ID)
+3. Clique em "Enviar para verificação"
+
+Resultado:
+   ✅ 14+ anos → Aprovado automaticamente
+      - Ganha o cargo no Discord
+      - Mensagem de sucesso na tela
+
+   🚫 13 ou menos → Banido automaticamente
+      - Banido do servidor
+      - Telefone bloqueado (não pode tentar de novo)
+      - Mensagem genérica na tela (não sabe que foi banido)
+
+═══ PELO DISCORD (Bot) ═══
+
+Comandos:
+   *verificar  → Inicia a verificação pelo Discord
+   *reset      → Reseta o banco de dados (só admin)
+
+═══ RESETAR BANCO ═══
+
+Clique duas vezes em "resetar_banco.bat"
+ou mande *reset no Discord (se for admin)
+
+═══ ONDE RODA ═══
+
+- Site: https://verificar-gi0k.onrender.com (Render)
+- Bot Discord: roda localmente com "python main.py"
