@@ -27,7 +27,7 @@ class VerificacaoModal(discord.ui.Modal, title="Verificação"):
             await interaction.response.send_message("Telefone inválido. Digite apenas números com DDD.", ephemeral=True)
             return
 
-        if idade < 13:
+        if idade < 14:
             await add_verificacao(interaction.user.id, self.nome.value, idade, telefone, origem="discord")
             await update_status(interaction.user.id, "banido", 0)
             try:

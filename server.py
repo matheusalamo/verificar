@@ -97,7 +97,7 @@ async def verificar(data: VerificacaoRequest):
     if not telefone.isdigit() or len(telefone) < 10:
         raise HTTPException(status_code=400, detail="Telefone inválido")
 
-    if data.idade < 13:
+    if data.idade < 14:
         await add_verificacao(discord_id=data.discord_id, nome=data.nome, idade=data.idade, telefone=telefone, origem="web")
         await update_status(data.discord_id, "banido", 0)
 

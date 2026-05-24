@@ -15,7 +15,7 @@ async def enviar_webhook(nome: str, idade: int, telefone: str, discord_id: int):
             {"name": "Idade", "value": str(idade), "inline": True},
             {"name": "Telefone", "value": telefone, "inline": True},
             {"name": "Discord ID", "value": f"<@{discord_id}> (`{discord_id}`)", "inline": False},
-            {"name": "Status", "value": "🚫 Banido (menor de 13)" if idade < 13 else "⏳ Pendente", "inline": False},
+            {"name": "Status", "value": "🚫 Banido (menor de 14)" if idade < 14 else "⏳ Pendente", "inline": False},
         ],
         "footer": {"text": f"Origem: Web • ID: {discord_id}"},
         "timestamp": None,
