@@ -89,6 +89,40 @@
             </div>
         </div>
 
+        <div class="card" id="admin-card" style="display:none">
+            <div class="header">
+                <h1>Painel Admin</h1>
+                <p>Gerencie as verificações</p>
+            </div>
+
+            <div id="admin-login">
+                <div class="form-group">
+                    <label for="admin-password">Senha de administrador</label>
+                    <div class="input-wrapper">
+                        <input type="password" id="admin-password" placeholder="Digite a senha" style="padding-left:14px">
+                    </div>
+                </div>
+                <button type="button" id="admin-login-btn" onclick="adminLogin()">Entrar</button>
+                <div id="admin-login-error" style="display:none;margin-top:12px;padding:10px;border-radius:8px;background:rgba(220,38,38,0.12);color:#fca5a5;font-size:13px;text-align:center"></div>
+            </div>
+
+            <div id="admin-panel" style="display:none">
+                <div id="admin-list"></div>
+                <button type="button" onclick="adminLogout()" style="margin-top:16px;background:rgba(255,255,255,0.08);color:rgba(255,255,255,0.5);font-size:12px;padding:8px">Sair</button>
+            </div>
+
+            <div class="divider"><span>ou</span></div>
+
+            <div class="footer">
+                <a href="#" onclick="showForm()" class="footer-link">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14">
+                        <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/>
+                    </svg>
+                    Solicitar verificação
+                </a>
+            </div>
+        </div>
+
         <div class="card" id="status-card" style="display:none">
             <div class="header">
                 <h1>Consultar Status</h1>

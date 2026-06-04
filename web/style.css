@@ -295,6 +295,7 @@ button:disabled {
     margin-top: 20px;
     color: rgba(255, 255, 255, 0.12);
     font-size: 11px;
+    cursor: default;
 }
 
 @media (max-width: 480px) {

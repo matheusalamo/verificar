@@ -1,0 +1,12 @@
+**📋 SISTEMA DE VERIFICAÇÃO**
+
+Faça sua verificação pelo site abaixo:
+
+🔗 **https://verificar-gi0k.onrender.com**
+
+**📝 Preencha:**
+• Nome completo
+• Idade
+• Telefone (com DDD)
+• ID do Discord (botão direito no nome > Copiar ID)
+Qualquer dúvida, chame um administrador.

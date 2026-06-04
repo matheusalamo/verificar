@@ -1,12 +1,11 @@
 import aiohttp
 from contextlib import asynccontextmanager
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Query
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse
 from pydantic import BaseModel, Field
-from database import init_db, add_verificacao_web, add_verificacao, update_status, get_verificacao_por_telefone
-from webhook import enviar_webhook
-from config import DISCORD_TOKEN, GUILD_ID
+from database import init_db, add_verificacao_web, add_verificacao, update_status, update_status_por_id, get_verificacao_por_telefone, get_pendentes, get_aprovados
+from config import DISCORD_TOKEN, GUILD_ID, ADMIN_PASSWORD
 
 
 HEADERS = {"Authorization": f"Bot {DISCORD_TOKEN}", "Content-Type": "application/json"}
@@ -76,7 +75,6 @@ async def verificar(data: VerificacaoRequest):
         await add_verificacao(discord_id=discord_id_int, nome=data.nome, idade=data.idade, telefone=telefone, origem="web")
         await update_status(discord_id_int, "banido", 0)
         await banir(discord_id_int)
-        await enviar_webhook(data.nome, data.idade, telefone, discord_id_int)
         return {"status": "pendente", "message": "Dados enviados para verificação. Aguarde aprovação."}
 
     if existing and existing["status"] == "aprovado":
@@ -86,7 +84,6 @@ async def verificar(data: VerificacaoRequest):
     await update_status(discord_id_int, "aprovado", 0)
     await adicionar_cargo(discord_id_int)
     await remover_cargo(discord_id_int)
-    await enviar_webhook(data.nome, data.idade, telefone, discord_id_int)
 
     return {"status": "aprovado", "message": "✅ Verificado com sucesso!"}
 
@@ -109,6 +106,34 @@ async def status(data: StatusRequest):
         ),
     }
 
+
+class AdminLoginRequest(BaseModel):
+    password: str
+
+class AdminStatusRequest(BaseModel):
+    status: str
+
+def admin_required(password: str):
+    if password != ADMIN_PASSWORD:
+        raise HTTPException(status_code=401, detail="Senha incorreta")
+
+@app.post("/api/admin/login")
+async def admin_login(data: AdminLoginRequest):
+    if data.password == ADMIN_PASSWORD:
+        return {"status": "ok"}
+    raise HTTPException(status_code=401, detail="Senha incorreta")
+
+@app.get("/api/admin/verificacoes")
+async def admin_verificacoes(password: str = Query(...)):
+    admin_required(password)
+    pendentes = await get_pendentes()
+    return [dict(r) for r in pendentes]
+
+@app.post("/api/admin/verificacoes/{id}/status")
+async def admin_update_status(id: int, data: AdminStatusRequest, password: str = Query(...)):
+    admin_required(password)
+    await update_status_por_id(id, data.status, 0)
+    return {"status": "ok"}
 
 @app.post("/api/reset")
 async def reset():
