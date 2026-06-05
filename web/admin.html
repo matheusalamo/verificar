@@ -17,6 +17,20 @@
             display: flex; align-items: center; gap: 6px;
         }
         .admin-header a:hover { color: #5865f2; }
+
+        .tabs {
+            display: flex; gap: 4px; margin-bottom: 20px;
+            background: rgba(0,0,0,0.2); border-radius: 10px; padding: 4px;
+        }
+        .tab {
+            flex: 1; padding: 10px; text-align: center; border: none; border-radius: 8px;
+            font-size: 13px; font-weight: 600; cursor: pointer; margin: 0;
+            background: transparent; color: rgba(255,255,255,0.4);
+        }
+        .tab:hover { color: rgba(255,255,255,0.7); }
+        .tab.active { background: #5865f2; color: #fff; }
+        .tab.active:hover { background: #4752c4; }
+
         .admin-item {
             background: rgba(0,0,0,0.3); border-radius: 10px; padding: 14px;
             border: 1px solid rgba(255,255,255,0.06); margin-bottom: 10px;
@@ -30,9 +44,13 @@
             display: grid; grid-template-columns: 1fr 1fr; gap: 4px;
             font-size: 13px; color: rgba(255,255,255,0.6); margin-bottom: 10px;
         }
-        .admin-item-date {
-            font-size: 11px; color: rgba(255,255,255,0.25); margin-bottom: 10px;
-        }
+        .admin-item-date { font-size: 11px; color: rgba(255,255,255,0.25); margin-bottom: 10px; }
+        .admin-item-status { font-size: 12px; font-weight: 600; margin-bottom: 10px; }
+        .status-aprovado { color: #22c55e; }
+        .status-reprovado { color: #ef4444; }
+        .status-banido { color: #ef4444; }
+        .status-pendente { color: #eab308; }
+
         .admin-item-actions { display: flex; gap: 8px; }
         .admin-item-actions button {
             flex: 1; padding: 8px; font-size: 13px; border: none; border-radius: 8px; cursor: pointer; margin: 0;
@@ -41,18 +59,13 @@
         .btn-reject { background: #ef4444; color: #fff; }
         .btn-approve:hover { background: #16a34a; }
         .btn-reject:hover { background: #dc2626; }
-        .btn-logout {
-            width: auto; margin-top: 16px; padding: 8px 16px; font-size: 12px;
-            background: rgba(255,255,255,0.08); color: rgba(255,255,255,0.5);
-        }
-        .btn-logout:hover { background: rgba(255,255,255,0.12); }
+        .loading { text-align: center; color: rgba(255,255,255,0.4); padding: 20px; }
+        .empty { text-align: center; color: rgba(255,255,255,0.3); padding: 20px; }
+        .error-text { text-align: center; color: #fca5a5; padding: 20px; }
         #error-msg {
             display: none; margin-top: 12px; padding: 10px; border-radius: 8px;
             background: rgba(220,38,38,0.12); color: #fca5a5; font-size: 13px; text-align: center;
         }
-        .loading { text-align: center; color: rgba(255,255,255,0.4); padding: 20px; }
-        .empty { text-align: center; color: rgba(255,255,255,0.3); padding: 20px; }
-        .error-text { text-align: center; color: #fca5a5; padding: 20px; }
     </style>
 </head>
 <body>
@@ -90,7 +103,14 @@
                     Sair
                 </a>
             </div>
-            <div id="admin-list"></div>
+
+            <div class="tabs">
+                <button class="tab active" id="tab-pendentes" onclick="switchTab('pendentes')">Pendentes</button>
+                <button class="tab" id="tab-logs" onclick="switchTab('logs')">Logs</button>
+            </div>
+
+            <div id="section-pendentes"></div>
+            <div id="section-logs" style="display:none"></div>
         </div>
     </div>
 
@@ -99,8 +119,13 @@
 
         function getPassword() {
             const p = sessionStorage.getItem(PASSWORD_KEY);
-            if (p) { document.getElementById('login-card').style.display = 'none'; document.getElementById('admin-card').style.display = 'block'; loadVerificacoes(p); return p; }
-            return null;
+            if (p) {
+                document.getElementById('login-card').style.display = 'none';
+                document.getElementById('admin-card').style.display = 'block';
+                window._adminPwd = p;
+                loadPendentes();
+                loadLogs();
+            }
         }
 
         document.getElementById('login-btn').addEventListener('click', async () => {
@@ -111,9 +136,11 @@
                 const r = await fetch('/api/admin/login', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({password:pwd}) });
                 if (!r.ok) { err.textContent = 'Senha incorreta.'; err.style.display = 'block'; return; }
                 sessionStorage.setItem(PASSWORD_KEY, pwd);
+                window._adminPwd = pwd;
                 document.getElementById('login-card').style.display = 'none';
                 document.getElementById('admin-card').style.display = 'block';
-                loadVerificacoes(pwd);
+                loadPendentes();
+                loadLogs();
             } catch { err.textContent = 'Erro ao conectar.'; err.style.display = 'block'; }
         });
         document.getElementById('pwd').addEventListener('keydown', (e) => { if (e.key === 'Enter') document.getElementById('login-btn').click(); });
@@ -127,14 +154,29 @@
             document.getElementById('error-msg').style.display = 'none';
         });
 
-        async function loadVerificacoes(pwd) {
-            const list = document.getElementById('admin-list');
-            list.innerHTML = '<div class="loading">Carregando...</div>';
+        function switchTab(tab) {
+            const p = document.getElementById('tab-pendentes');
+            const l = document.getElementById('tab-logs');
+            const sp = document.getElementById('section-pendentes');
+            const sl = document.getElementById('section-logs');
+            if (tab === 'pendentes') {
+                p.classList.add('active'); l.classList.remove('active');
+                sp.style.display = 'block'; sl.style.display = 'none';
+            } else {
+                l.classList.add('active'); p.classList.remove('active');
+                sl.style.display = 'block'; sp.style.display = 'none';
+            }
+        }
+
+        async function loadPendentes() {
+            const div = document.getElementById('section-pendentes');
+            div.innerHTML = '<div class="loading">Carregando...</div>';
+            const pwd = window._adminPwd;
             try {
-                const r = await fetch(`/api/admin/verificacoes?password=${encodeURIComponent(pwd)}`);
-                if (!r.ok) { list.innerHTML = '<div class="error-text">Erro ao carregar.</div>'; return; }
+                const r = await fetch('/api/admin/verificacoes?password=' + encodeURIComponent(pwd));
+                if (!r.ok) { div.innerHTML = '<div class="error-text">Erro ao carregar.</div>'; return; }
                 const data = await r.json();
-                if (!data.length) { list.innerHTML = '<div class="empty">Nenhuma verificação pendente.</div>'; return; }
+                if (!data.length) { div.innerHTML = '<div class="empty">Nenhuma verificação pendente.</div>'; return; }
                 let html = '';
                 for (const v of data) {
                     html += '<div class="admin-item">';
@@ -144,16 +186,39 @@
                     html += '<div class="admin-item-actions"><button class="btn-approve" onclick="action(' + v.id + ',\'aprovado\')">Aprovar</button><button class="btn-reject" onclick="action(' + v.id + ',\'reprovado\')">Reprovar</button></div>';
                     html += '</div>';
                 }
-                list.innerHTML = html;
-                window._adminPwd = pwd;
-            } catch { list.innerHTML = '<div class="error-text">Erro ao carregar.</div>'; }
+                div.innerHTML = html;
+            } catch { div.innerHTML = '<div class="error-text">Erro ao carregar.</div>'; }
+        }
+
+        async function loadLogs() {
+            const div = document.getElementById('section-logs');
+            div.innerHTML = '<div class="loading">Carregando...</div>';
+            const pwd = window._adminPwd;
+            try {
+                const r = await fetch('/api/admin/logs?password=' + encodeURIComponent(pwd));
+                if (!r.ok) { div.innerHTML = '<div class="error-text">Erro ao carregar.</div>'; return; }
+                const data = await r.json();
+                if (!data.length) { div.innerHTML = '<div class="empty">Nenhum registro.</div>'; return; }
+                let html = '';
+                for (const v of data) {
+                    const statusClass = 'status-' + v.status;
+                    const statusLabel = v.status === 'aprovado' ? 'Aprovado' : v.status === 'reprovado' ? 'Reprovado' : v.status === 'banido' ? 'Banido' : 'Pendente';
+                    html += '<div class="admin-item">';
+                    html += '<div class="admin-item-header"><strong>' + esc(v.nome) + '</strong><span>#' + v.id + '</span></div>';
+                    html += '<div class="admin-item-status"><span class="' + statusClass + '">' + statusLabel + '</span></div>';
+                    html += '<div class="admin-item-info"><span>Idade: ' + v.idade + '</span><span>Tel: ' + esc(v.telefone) + '</span><span>Discord: ' + (v.discord_id || '-') + '</span><span>Origem: ' + (v.origem || '-') + '</span></div>';
+                    html += '<div class="admin-item-date">' + (v.created_at || '') + '</div>';
+                    html += '</div>';
+                }
+                div.innerHTML = html;
+            } catch { div.innerHTML = '<div class="error-text">Erro ao carregar.</div>'; }
         }
 
         async function action(id, status) {
             const pwd = window._adminPwd;
             try {
                 const r = await fetch('/api/admin/verificacoes/' + id + '/status?password=' + encodeURIComponent(pwd), { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({status}) });
-                if (r.ok) loadVerificacoes(pwd);
+                if (r.ok) { loadPendentes(); loadLogs(); }
             } catch {}
         }
 

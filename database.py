@@ -88,6 +88,15 @@ async def get_pendentes():
         return await cursor.fetchall()
 
 
+async def get_all_verificacoes():
+    async with aiosqlite.connect(DB_PATH) as db:
+        db.row_factory = aiosqlite.Row
+        cursor = await db.execute(
+            "SELECT * FROM verificacoes ORDER BY created_at DESC LIMIT 200"
+        )
+        return await cursor.fetchall()
+
+
 async def update_status(discord_id: int, status: str, reviewed_by: int):
     async with aiosqlite.connect(DB_PATH) as db:
         await db.execute(

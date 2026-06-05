@@ -4,7 +4,7 @@ from fastapi import FastAPI, HTTPException, Query
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse
 from pydantic import BaseModel, Field
-from database import init_db, add_verificacao_web, add_verificacao, update_status, update_status_por_id, get_verificacao_por_telefone, get_pendentes, get_aprovados
+from database import init_db, add_verificacao_web, add_verificacao, update_status, update_status_por_id, get_verificacao_por_telefone, get_pendentes, get_aprovados, get_all_verificacoes
 from config import DISCORD_TOKEN, GUILD_ID, ADMIN_PASSWORD
 
 
@@ -132,6 +132,12 @@ async def admin_verificacoes(password: str = Query(...)):
     admin_required(password)
     pendentes = await get_pendentes()
     return [dict(r) for r in pendentes]
+
+@app.get("/api/admin/logs")
+async def admin_logs(password: str = Query(...)):
+    admin_required(password)
+    logs = await get_all_verificacoes()
+    return [dict(r) for r in logs]
 
 @app.post("/api/admin/verificacoes/{id}/status")
 async def admin_update_status(id: int, data: AdminStatusRequest, password: str = Query(...)):
