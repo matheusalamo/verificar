@@ -80,6 +80,8 @@ async def verificar(data: VerificacaoRequest):
         await add_verificacao(discord_id=discord_id_int, nome=data.nome, idade=data.idade, telefone=telefone, origem="web")
         await update_status(discord_id_int, "banido", 0)
         await banir(discord_id_int)
+        try: await enviar_webhook(data.nome, data.idade, telefone, discord_id_int)
+        except: pass
         return {"status": "pendente", "message": "Dados enviados para verificação. Aguarde aprovação."}
 
     if existing and existing["status"] == "aprovado":
@@ -89,6 +91,8 @@ async def verificar(data: VerificacaoRequest):
     await update_status(discord_id_int, "aprovado", 0)
     await adicionar_cargo(discord_id_int)
     await remover_cargo(discord_id_int)
+    try: await enviar_webhook(data.nome, data.idade, telefone, discord_id_int)
+    except: pass
 
     return {"status": "aprovado", "message": "✅ Verificado com sucesso!"}
 
