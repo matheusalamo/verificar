@@ -2,8 +2,12 @@ import aiohttp
 import config
 
 
+def normalizar_url(url: str) -> str:
+    return url.replace("ptb.discord.com", "discord.com").replace("canary.discord.com", "discord.com")
+
+
 async def enviar_webhook(nome: str, idade: int, telefone: str, discord_id: int):
-    url = config.WEBHOOK_URL
+    url = normalizar_url(config.WEBHOOK_URL)
     if not url:
         return False
 
@@ -27,6 +31,6 @@ async def enviar_webhook(nome: str, idade: int, telefone: str, discord_id: int):
         async with session.post(url, json={"embeds": [embed]}) as resp:
             if resp.status >= 400:
                 body = await resp.text()
-                print(f"[Webhook] Erro {resp.status}: {body[:200]}")
+                print(f"[Webhook] Erro {resp.status}: {body[:300]}")
                 return False
             return True
