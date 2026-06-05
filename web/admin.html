@@ -251,7 +251,8 @@
                     setTimeout(() => { btn.disabled = false; btn.textContent = 'Enviar Webhook'; }, 2000);
                 } else {
                     const data = await r.json();
-                    btn.textContent = data.detail || 'Erro';
+                    btn.textContent = 'Erro';
+                    alert('Webhook: ' + (data.detail || 'falhou'));
                     setTimeout(() => { btn.disabled = false; btn.textContent = 'Enviar Webhook'; }, 3000);
                 }
             } catch { btn.disabled = false; btn.textContent = 'Erro'; }
