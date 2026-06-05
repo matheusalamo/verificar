@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Painel Admin - Verificação</title>
+    <link rel="stylesheet" href="/static/style.css">
+    <style>
+        .admin-header {
+            display: flex; justify-content: space-between; align-items: center;
+            margin-bottom: 24px; padding-bottom: 16px;
+            border-bottom: 1px solid rgba(255,255,255,0.06);
+        }
+        .admin-header h1 { margin: 0; font-size: 20px; }
+        .admin-header a {
+            color: rgba(255,255,255,0.35); text-decoration: none; font-size: 13px;
+            display: flex; align-items: center; gap: 6px;
+        }
+        .admin-header a:hover { color: #5865f2; }
+        .admin-item {
+            background: rgba(0,0,0,0.3); border-radius: 10px; padding: 14px;
+            border: 1px solid rgba(255,255,255,0.06); margin-bottom: 10px;
+        }
+        .admin-item-header {
+            display: flex; justify-content: space-between; align-items: start; margin-bottom: 8px;
+        }
+        .admin-item-header strong { color: #fff; font-size: 15px; }
+        .admin-item-header span { font-size: 12px; color: rgba(255,255,255,0.3); }
+        .admin-item-info {
+            display: grid; grid-template-columns: 1fr 1fr; gap: 4px;
+            font-size: 13px; color: rgba(255,255,255,0.6); margin-bottom: 10px;
+        }
+        .admin-item-date {
+            font-size: 11px; color: rgba(255,255,255,0.25); margin-bottom: 10px;
+        }
+        .admin-item-actions { display: flex; gap: 8px; }
+        .admin-item-actions button {
+            flex: 1; padding: 8px; font-size: 13px; border: none; border-radius: 8px; cursor: pointer; margin: 0;
+        }
+        .btn-approve { background: #22c55e; color: #fff; }
+        .btn-reject { background: #ef4444; color: #fff; }
+        .btn-approve:hover { background: #16a34a; }
+        .btn-reject:hover { background: #dc2626; }
+        .btn-logout {
+            width: auto; margin-top: 16px; padding: 8px 16px; font-size: 12px;
+            background: rgba(255,255,255,0.08); color: rgba(255,255,255,0.5);
+        }
+        .btn-logout:hover { background: rgba(255,255,255,0.12); }
+        #error-msg {
+            display: none; margin-top: 12px; padding: 10px; border-radius: 8px;
+            background: rgba(220,38,38,0.12); color: #fca5a5; font-size: 13px; text-align: center;
+        }
+        .loading { text-align: center; color: rgba(255,255,255,0.4); padding: 20px; }
+        .empty { text-align: center; color: rgba(255,255,255,0.3); padding: 20px; }
+        .error-text { text-align: center; color: #fca5a5; padding: 20px; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="card" id="login-card">
+            <div class="admin-header" style="border:none;margin-bottom:8px">
+                <h1>Painel Admin</h1>
+            </div>
+            <p style="color:rgba(255,255,255,0.4);font-size:14px;margin-bottom:24px">Digite a senha de administrador</p>
+            <div class="form-group">
+                <label for="pwd">Senha</label>
+                <div class="input-wrapper">
+                    <input type="password" id="pwd" placeholder="Digite a senha" style="padding-left:14px">
+                </div>
+            </div>
+            <button type="button" id="login-btn">Entrar</button>
+            <div id="error-msg"></div>
+            <div style="text-align:center;margin-top:20px">
+                <a href="/" class="footer-link">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14">
+                        <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/>
+                    </svg>
+                    Voltar
+                </a>
+            </div>
+        </div>
+
+        <div class="card" id="admin-card" style="display:none">
+            <div class="admin-header">
+                <h1>Painel Admin</h1>
+                <a href="#" id="logout-link">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14">
+                        <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9"/>
+                    </svg>
+                    Sair
+                </a>
+            </div>
+            <div id="admin-list"></div>
+        </div>
+    </div>
+
+    <script>
+        const PASSWORD_KEY = 'admin_pass';
+
+        function getPassword() {
+            const p = sessionStorage.getItem(PASSWORD_KEY);
+            if (p) { document.getElementById('login-card').style.display = 'none'; document.getElementById('admin-card').style.display = 'block'; loadVerificacoes(p); return p; }
+            return null;
+        }
+
+        document.getElementById('login-btn').addEventListener('click', async () => {
+            const pwd = document.getElementById('pwd').value.trim();
+            const err = document.getElementById('error-msg');
+            if (!pwd) { err.textContent = 'Digite a senha.'; err.style.display = 'block'; return; }
+            try {
+                const r = await fetch('/api/admin/login', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({password:pwd}) });
+                if (!r.ok) { err.textContent = 'Senha incorreta.'; err.style.display = 'block'; return; }
+                sessionStorage.setItem(PASSWORD_KEY, pwd);
+                document.getElementById('login-card').style.display = 'none';
+                document.getElementById('admin-card').style.display = 'block';
+                loadVerificacoes(pwd);
+            } catch { err.textContent = 'Erro ao conectar.'; err.style.display = 'block'; }
+        });
+        document.getElementById('pwd').addEventListener('keydown', (e) => { if (e.key === 'Enter') document.getElementById('login-btn').click(); });
+
+        document.getElementById('logout-link').addEventListener('click', (e) => {
+            e.preventDefault();
+            sessionStorage.removeItem(PASSWORD_KEY);
+            document.getElementById('admin-card').style.display = 'none';
+            document.getElementById('login-card').style.display = 'block';
+            document.getElementById('pwd').value = '';
+            document.getElementById('error-msg').style.display = 'none';
+        });
+
+        async function loadVerificacoes(pwd) {
+            const list = document.getElementById('admin-list');
+            list.innerHTML = '<div class="loading">Carregando...</div>';
+            try {
+                const r = await fetch(`/api/admin/verificacoes?password=${encodeURIComponent(pwd)}`);
+                if (!r.ok) { list.innerHTML = '<div class="error-text">Erro ao carregar.</div>'; return; }
+                const data = await r.json();
+                if (!data.length) { list.innerHTML = '<div class="empty">Nenhuma verificação pendente.</div>'; return; }
+                let html = '';
+                for (const v of data) {
+                    html += '<div class="admin-item">';
+                    html += '<div class="admin-item-header"><strong>' + esc(v.nome) + '</strong><span>#' + v.id + '</span></div>';
+                    html += '<div class="admin-item-info"><span>Idade: ' + v.idade + '</span><span>Tel: ' + esc(v.telefone) + '</span><span>Discord: ' + (v.discord_id || '-') + '</span><span>Origem: ' + (v.origem || '-') + '</span></div>';
+                    html += '<div class="admin-item-date">' + (v.created_at || '') + '</div>';
+                    html += '<div class="admin-item-actions"><button class="btn-approve" onclick="action(' + v.id + ',\'aprovado\')">Aprovar</button><button class="btn-reject" onclick="action(' + v.id + ',\'reprovado\')">Reprovar</button></div>';
+                    html += '</div>';
+                }
+                list.innerHTML = html;
+                window._adminPwd = pwd;
+            } catch { list.innerHTML = '<div class="error-text">Erro ao carregar.</div>'; }
+        }
+
+        async function action(id, status) {
+            const pwd = window._adminPwd;
+            try {
+                const r = await fetch('/api/admin/verificacoes/' + id + '/status?password=' + encodeURIComponent(pwd), { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({status}) });
+                if (r.ok) loadVerificacoes(pwd);
+            } catch {}
+        }
+
+        function esc(s) { const d = document.createElement('div'); d.textContent = s; return d.innerHTML; }
+
+        getPassword();
+    </script>
+</body>
+</html>

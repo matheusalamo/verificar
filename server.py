@@ -57,6 +57,10 @@ app.mount("/static", StaticFiles(directory="web"), name="web")
 async def index():
     return FileResponse("web/index.html")
 
+@app.get("/admin")
+async def admin_page():
+    return FileResponse("web/admin.html")
+
 
 @app.post("/api/verificar")
 async def verificar(data: VerificacaoRequest):
