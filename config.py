@@ -11,4 +11,4 @@ DB_PATH = "data/verificacoes.db"
 WEB_HOST = os.getenv("WEB_HOST", "0.0.0.0")
 WEB_PORT = int(os.getenv("WEB_PORT", 8000))
 WEBHOOK_URL = os.getenv("WEBHOOK_URL", "")
-ADMIN_PASSWORD = os.getenv("ADMIN_PASSWORD", "admin123")
+ADMIN_PASSWORD = os.getenv("ADMIN_PASSWORD") or "admin123"
