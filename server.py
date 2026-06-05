@@ -6,7 +6,7 @@ from fastapi.responses import FileResponse
 from pydantic import BaseModel, Field
 from database import init_db, add_verificacao_web, add_verificacao, update_status, update_status_por_id, get_verificacao_por_telefone, get_pendentes, get_aprovados, get_all_verificacoes, get_verificacao_por_id
 from webhook import enviar_webhook
-from config import DISCORD_TOKEN, GUILD_ID, ADMIN_PASSWORD, WEBHOOK_URL
+from config import DISCORD_TOKEN, GUILD_ID, ADMIN_PASSWORD, LOG_CHANNEL_ID
 
 
 HEADERS = {"Authorization": f"Bot {DISCORD_TOKEN}", "Content-Type": "application/json"}
@@ -149,8 +149,6 @@ async def admin_update_status(id: int, data: AdminStatusRequest, password: str =
 @app.post("/api/admin/webhook/{id}")
 async def admin_webhook_resend(id: int, password: str = Query(...)):
     admin_required(password)
-    if not WEBHOOK_URL:
-        raise HTTPException(status_code=400, detail="WEBHOOK_URL não configurada")
     record = await get_verificacao_por_id(id)
     if not record:
         raise HTTPException(status_code=404, detail="Registro não encontrado")
@@ -162,7 +160,7 @@ async def admin_webhook_resend(id: int, password: str = Query(...)):
 @app.get("/api/admin/webhook/status")
 async def admin_webhook_status(password: str = Query(...)):
     admin_required(password)
-    return {"configurado": bool(WEBHOOK_URL)}
+    return {"configurado": bool(DISCORD_TOKEN and LOG_CHANNEL_ID)}
 
 @app.post("/api/reset")
 async def reset():
