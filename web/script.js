@@ -20,7 +20,7 @@ function showAdmin() {
     document.getElementById('admin-card').style.display = 'block';
 }
 
-document.querySelector('.brand')?.addEventListener('click', () => {
+document.querySelector('.brand-icon')?.addEventListener('click', () => {
     adminClicks++;
     clearTimeout(adminClickTimer);
     adminClickTimer = setTimeout(() => { adminClicks = 0; }, 800);
