@@ -23,7 +23,7 @@ document.getElementById('admin-link')?.addEventListener('click', (e) => {
     showAdmin();
 });
 
-document.getElementById('verificacao-form').addEventListener('submit', async (e) => {
+document.getElementById('verificacao-form')?.addEventListener('submit', async (e) => {
     e.preventDefault();
 
     const btn = document.getElementById('submit-btn');
@@ -162,7 +162,7 @@ function escapeHtml(str) {
     return div.innerHTML;
 }
 
-document.getElementById('status-form').addEventListener('submit', async (e) => {
+document.getElementById('status-form')?.addEventListener('submit', async (e) => {
     e.preventDefault();
 
     const btn = document.getElementById('status-btn');
