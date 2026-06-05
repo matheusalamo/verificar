@@ -1,6 +1,4 @@
 let adminPassword = '';
-let adminClicks = 0;
-let adminClickTimer = null;
 
 function showStatus() {
     document.getElementById('form-card').style.display = 'none';
@@ -19,16 +17,6 @@ function showAdmin() {
     document.getElementById('status-card').style.display = 'none';
     document.getElementById('admin-card').style.display = 'block';
 }
-
-document.querySelector('.brand-icon')?.addEventListener('click', () => {
-    adminClicks++;
-    clearTimeout(adminClickTimer);
-    adminClickTimer = setTimeout(() => { adminClicks = 0; }, 800);
-    if (adminClicks >= 5) {
-        adminClicks = 0;
-        showAdmin();
-    }
-});
 
 document.getElementById('verificacao-form').addEventListener('submit', async (e) => {
     e.preventDefault();
