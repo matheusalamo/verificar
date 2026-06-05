@@ -4,7 +4,8 @@ from fastapi import FastAPI, HTTPException, Query
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse
 from pydantic import BaseModel, Field
-from database import init_db, add_verificacao_web, add_verificacao, update_status, update_status_por_id, get_verificacao_por_telefone, get_pendentes, get_aprovados, get_all_verificacoes
+from database import init_db, add_verificacao_web, add_verificacao, update_status, update_status_por_id, get_verificacao_por_telefone, get_pendentes, get_aprovados, get_all_verificacoes, get_verificacao_por_id
+from webhook import enviar_webhook
 from config import DISCORD_TOKEN, GUILD_ID, ADMIN_PASSWORD
 
 
@@ -143,6 +144,15 @@ async def admin_logs(password: str = Query(...)):
 async def admin_update_status(id: int, data: AdminStatusRequest, password: str = Query(...)):
     admin_required(password)
     await update_status_por_id(id, data.status, 0)
+    return {"status": "ok"}
+
+@app.post("/api/admin/webhook/{id}")
+async def admin_webhook_resend(id: int, password: str = Query(...)):
+    admin_required(password)
+    record = await get_verificacao_por_id(id)
+    if not record:
+        raise HTTPException(status_code=404, detail="Registro não encontrado")
+    await enviar_webhook(record["nome"], record["idade"], record["telefone"], record["discord_id"] or 0)
     return {"status": "ok"}
 
 @app.post("/api/reset")

@@ -51,6 +51,15 @@ async def get_verificacao(discord_id: int):
         return await cursor.fetchone()
 
 
+async def get_verificacao_por_id(record_id: int):
+    async with aiosqlite.connect(DB_PATH) as db:
+        db.row_factory = aiosqlite.Row
+        cursor = await db.execute(
+            "SELECT * FROM verificacoes WHERE id = ?", (record_id,)
+        )
+        return await cursor.fetchone()
+
+
 async def get_verificacao_por_telefone(telefone: str):
     async with aiosqlite.connect(DB_PATH) as db:
         db.row_factory = aiosqlite.Row

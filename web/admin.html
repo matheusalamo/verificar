@@ -59,6 +59,12 @@
         .btn-reject { background: #ef4444; color: #fff; }
         .btn-approve:hover { background: #16a34a; }
         .btn-reject:hover { background: #dc2626; }
+        .btn-webhook {
+            flex:1; padding:6px; font-size:12px; border:none; border-radius:8px; cursor:pointer; margin:0;
+            background: rgba(88,101,242,0.2); color: #8b9aff;
+        }
+        .btn-webhook:hover { background: rgba(88,101,242,0.35); }
+        .btn-webhook:disabled { opacity:0.4; cursor:default; }
         .loading { text-align: center; color: rgba(255,255,255,0.4); padding: 20px; }
         .empty { text-align: center; color: rgba(255,255,255,0.3); padding: 20px; }
         .error-text { text-align: center; color: #fca5a5; padding: 20px; }
@@ -208,10 +214,22 @@
                     html += '<div class="admin-item-status"><span class="' + statusClass + '">' + statusLabel + '</span></div>';
                     html += '<div class="admin-item-info"><span>Idade: ' + v.idade + '</span><span>Tel: ' + esc(v.telefone) + '</span><span>Discord: ' + (v.discord_id || '-') + '</span><span>Origem: ' + (v.origem || '-') + '</span></div>';
                     html += '<div class="admin-item-date">' + (v.created_at || '') + '</div>';
+                    html += '<div style="display:flex;gap:8px"><button class="btn-webhook" onclick="enviarWebhook(' + v.id + ')">Enviar Webhook</button></div>';
                     html += '</div>';
                 }
                 div.innerHTML = html;
             } catch { div.innerHTML = '<div class="error-text">Erro ao carregar.</div>'; }
+        }
+
+        async function enviarWebhook(id) {
+            const pwd = window._adminPwd;
+            const btn = event.target;
+            btn.disabled = true; btn.textContent = 'Enviando...';
+            try {
+                await fetch('/api/admin/webhook/' + id + '?password=' + encodeURIComponent(pwd), { method:'POST' });
+                btn.textContent = 'Enviado!';
+                setTimeout(() => { btn.disabled = false; btn.textContent = 'Enviar Webhook'; }, 2000);
+            } catch { btn.disabled = false; btn.textContent = 'Erro'; }
         }
 
         async function action(id, status) {
