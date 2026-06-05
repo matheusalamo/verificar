@@ -109,6 +109,7 @@
                     Sair
                 </a>
             </div>
+            <div id="webhook-status" style="font-size:12px;text-align:center;margin-bottom:16px;padding:8px;border-radius:8px;display:none"></div>
 
             <div class="tabs">
                 <button class="tab active" id="tab-pendentes" onclick="switchTab('pendentes')">Pendentes</button>
@@ -131,6 +132,7 @@
                 window._adminPwd = p;
                 loadPendentes();
                 loadLogs();
+                loadWebhookStatus();
             }
         }
 
@@ -147,6 +149,7 @@
                 document.getElementById('admin-card').style.display = 'block';
                 loadPendentes();
                 loadLogs();
+                loadWebhookStatus();
             } catch { err.textContent = 'Erro ao conectar.'; err.style.display = 'block'; }
         });
         document.getElementById('pwd').addEventListener('keydown', (e) => { if (e.key === 'Enter') document.getElementById('login-btn').click(); });
@@ -221,14 +224,36 @@
             } catch { div.innerHTML = '<div class="error-text">Erro ao carregar.</div>'; }
         }
 
+        async function loadWebhookStatus() {
+            const div = document.getElementById('webhook-status');
+            try {
+                const r = await fetch('/api/admin/webhook/status?password=' + encodeURIComponent(window._adminPwd));
+                const data = await r.json();
+                if (data.configurado) {
+                    div.style.display = 'none';
+                } else {
+                    div.style.display = 'block';
+                    div.style.background = 'rgba(220,38,38,0.1)';
+                    div.style.color = '#fca5a5';
+                    div.textContent = '⚠️ WEBHOOK_URL não configurada. Adicione no Render.';
+                }
+            } catch {}
+        }
+
         async function enviarWebhook(id) {
             const pwd = window._adminPwd;
             const btn = event.target;
             btn.disabled = true; btn.textContent = 'Enviando...';
             try {
-                await fetch('/api/admin/webhook/' + id + '?password=' + encodeURIComponent(pwd), { method:'POST' });
-                btn.textContent = 'Enviado!';
-                setTimeout(() => { btn.disabled = false; btn.textContent = 'Enviar Webhook'; }, 2000);
+                const r = await fetch('/api/admin/webhook/' + id + '?password=' + encodeURIComponent(pwd), { method:'POST' });
+                if (r.ok) {
+                    btn.textContent = 'Enviado!';
+                    setTimeout(() => { btn.disabled = false; btn.textContent = 'Enviar Webhook'; }, 2000);
+                } else {
+                    const data = await r.json();
+                    btn.textContent = data.detail || 'Erro';
+                    setTimeout(() => { btn.disabled = false; btn.textContent = 'Enviar Webhook'; }, 3000);
+                }
             } catch { btn.disabled = false; btn.textContent = 'Erro'; }
         }
 
