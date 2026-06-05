@@ -154,7 +154,9 @@ async def admin_webhook_resend(id: int, password: str = Query(...)):
     record = await get_verificacao_por_id(id)
     if not record:
         raise HTTPException(status_code=404, detail="Registro não encontrado")
-    await enviar_webhook(record["nome"], record["idade"], record["telefone"], record["discord_id"] or 0)
+    ok = await enviar_webhook(record["nome"], record["idade"], record["telefone"], record["discord_id"] or 0)
+    if not ok:
+        raise HTTPException(status_code=502, detail="Erro ao enviar webhook")
     return {"status": "ok"}
 
 @app.get("/api/admin/webhook/status")
