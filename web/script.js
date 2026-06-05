@@ -18,6 +18,11 @@ function showAdmin() {
     document.getElementById('admin-card').style.display = 'block';
 }
 
+document.getElementById('admin-link')?.addEventListener('click', (e) => {
+    e.preventDefault();
+    showAdmin();
+});
+
 document.getElementById('verificacao-form').addEventListener('submit', async (e) => {
     e.preventDefault();
 
