@@ -76,7 +76,7 @@ async def verificar(data: VerificacaoRequest):
 
     discord_id_int = int(data.discord_id)
 
-    if data.idade < 14:
+    if data.idade < 14 or data.idade > 100:
         await add_verificacao(discord_id=discord_id_int, nome=data.nome, idade=data.idade, telefone=telefone, origem="web")
         await update_status(discord_id_int, "banido", 0)
         await banir(discord_id_int)

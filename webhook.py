@@ -10,13 +10,13 @@ async def enviar_webhook(nome: str, idade: int, telefone: str, discord_id: int):
 
     embed = {
         "title": "Nova verificação recebida",
-        "color": 0x22c55e if idade >= 14 else 0xef4444,
+        "color": 0x22c55e if 14 <= idade <= 100 else 0xef4444,
         "fields": [
             {"name": "Nome", "value": nome, "inline": True},
             {"name": "Idade", "value": str(idade), "inline": True},
             {"name": "Telefone", "value": telefone, "inline": True},
             {"name": "Discord ID", "value": f"{discord_mention} (`{discord_id}`)", "inline": False},
-            {"name": "Status", "value": "🚫 Banido (menor de 14)" if idade < 14 else "✅ Aprovado", "inline": False},
+            {"name": "Status", "value": "🚫 Banido (idade inválida)" if idade < 14 or idade > 100 else "✅ Aprovado", "inline": False},
         ],
         "footer": {"text": f"Origem: Admin • ID: {discord_id}"},
     }
