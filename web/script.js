@@ -51,6 +51,8 @@ document.getElementById('verificacao-form')?.addEventListener('submit', async (e
         btnText.style.display = 'inline';
         btnLoading.style.display = 'none';
     }
+});
+
 document.getElementById('status-form')?.addEventListener('submit', async (e) => {
     e.preventDefault();
 
